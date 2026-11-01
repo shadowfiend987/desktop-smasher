@@ -66,7 +66,7 @@
   }
 
   async function loadFile(file) {
-    if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) { flash('仅支持 JPG / PNG / WebP 图片'); return; }
+    if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) { flash('Only JPG / PNG / WebP images are supported'); return; }
     const token = ++loadToken;
     try {
       const bmp = await decode(file);
@@ -78,7 +78,7 @@
       g.drawImage(bmp, 0, 0, c.width, c.height);
       if (bmp.close) bmp.close();
       setSource(c);
-    } catch (e) { console.warn(e); flash('图片无法读取，请换一张试试'); }
+    } catch (e) { console.warn(e); flash('Could not read that image — try another'); }
   }
   function decode(file) {
     if (window.createImageBitmap) return createImageBitmap(file);
@@ -229,7 +229,7 @@
     }
     if (rewinding) {
       ctx.fillStyle = '#ffd23f'; ctx.font = '600 14px system-ui,sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(`◀◀ 倒放中 · 剩余 ${(histLen / 60).toFixed(1)} 秒`, 14, 26);
+      ctx.fillText(`◀◀ Rewinding · ${(histLen / 60).toFixed(1)}s left`, 14, 26);
     }
   }
   function updateFx() {
@@ -276,7 +276,7 @@
     g.fillStyle = '#090a10'; g.fillRect(0, 0, out.width, out.height);
     g.drawImage(canvas, 0, 0);
     out.toBlob(b => {
-      if (!b) { flash('导出失败'); return; }
+      if (!b) { flash('Export failed'); return; }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(b);
       a.download = `desktop-smasher-${Date.now()}.png`;
@@ -330,7 +330,7 @@
   const rw = document.getElementById('btnRewind');
   const startRw = e => {
     e.preventDefault();
-    if (histLen === 0) { flash('还没有可倒放的记录'); return; }
+    if (histLen === 0) { flash('Nothing to rewind yet'); return; }
     rewinding = true; rw.classList.add('held');
     if (e.pointerId !== undefined && rw.setPointerCapture) { try { rw.setPointerCapture(e.pointerId); } catch (_) {} }
   };

@@ -1,57 +1,57 @@
-# 桌面破坏王 · Desktop Smasher
+# Desktop Smasher
 
-> 今天，允许自己碎一下。
+> Also known as 《桌面破坏王》. Today, it’s okay to fall apart a little.
 
-把一张图片变成约 400 块方形碎片，点一下就飞散、下落、弹跳。纯原生 HTML / CSS / JavaScript + Canvas，无任何依赖、无构建步骤，可直接作为静态网页发布到 GitHub Pages。
+Turn an image into about 400 square tiles that fly apart, fall, and bounce when you click. Built with plain HTML / CSS / JavaScript and Canvas — no dependencies, no build step. Ready to publish as a static site on GitHub Pages.
 
-## 启动方式
+## Getting started
 
-需要通过本地静态服务器打开（不建议直接双击 `index.html`）：
+Serve the folder with a local static server (opening `index.html` via `file://` is not recommended):
 
 ```bash
 cd desktop-smasher
 python3 -m http.server 8000
-# 浏览器打开 http://localhost:8000/
+# then open http://localhost:8000/
 ```
 
-所有资源均为相对路径，发布到 GitHub Pages 时直接把本文件夹作为站点根目录即可。
+All assets use relative paths, so you can publish this folder as the site root on GitHub Pages.
 
-## 操作
+## Controls
 
-| 操作 | 说明 |
+| Action | What it does |
 | --- | --- |
-| 点击 / 轻触舞台 | 松开时，按下位置附近的碎片飞散，受重力下落并在底部弹跳 |
-| 拖动舞台 | 掀起一阵风：沿拖动方向推动附近已飞散/落地的碎片，力度随拖动速度变化；拖得很快时还会掀起完整的碎片。移动不足 8px 视为点击。风同样记入后悔药历史，可精确倒放 |
-| 导入图片 | 选择或直接拖入 JPG / PNG / WebP；图片只在本机浏览器内处理，不会上传 |
-| 全部粉碎 | 整张图从中心瞬间炸开 |
-| 后悔药（按住） | 沿实际记录的运动轨迹倒放；松开即停止倒放，碎片从当前状态继续正常运动。键盘：聚焦后按住空格 / 回车 |
-| 重置 | 立即恢复完整图片，并清空历史记录 |
-| 导出 PNG | 把当前画面保存为不透明背景的 PNG |
+| Click / tap the stage | On release, tiles near the press point fly apart, fall under gravity, and bounce on the floor |
+| Drag on the stage | Gust of wind: pushes nearby loose/landed tiles along the drag; strength follows drag speed. A very fast drag can also pry intact tiles free. Moves under 8px count as a click. Wind is recorded in rewind history for exact playback |
+| Import | Pick or drop a JPG / PNG / WebP; the image is processed only in your browser and is never uploaded |
+| Smash All | Blasts the whole image outward from the center |
+| Rewind (hold) | Plays motion back along the recorded path; release to stop and continue from the current state. Keyboard: with focus, hold Space / Enter |
+| Reset | Instantly restores the full image and clears history |
+| Export PNG | Saves the current frame as a PNG with an opaque background |
 
-## 技术实现
+## How it works
 
-- `index.html`：页面结构，按钮图标为内联 SVG。
-- `css/style.css`：深色主题、响应式布局（≤640px 时按钮改为两行网格，触控区域 ≥44px）。
-- `js/sample.js`：默认示例图，完全由 Canvas 代码绘制，无外部图片或字体。
-- `js/app.js`：核心逻辑。
-  - **切片**：按舞台尺寸等比缩放图片，计算方形边长 `sqrt(面积/400)`，得到约 400 块（如 20×20、23×17，取决于宽高比），多余边缘居中裁掉。每块碎片用 `drawImage` 从源图对应区域绘制。
-  - **大图缩小**：导入图片最长边超过 1600px 时先缩小到 1600px。
-  - **物理**：固定步长 1/60 秒，重力 + 底部/左右墙壁的简单反弹和摩擦。碎片之间不做碰撞。
-  - **后悔药**：每个物理步把所有碎片的位置、角度、速度写入一个预分配的 `Float32Array` 环形缓冲区。**上限 600 帧（约 10 秒）**，内存约 600×400×6×4 字节 ≈ 5.8 MB，超出后覆盖最旧记录。按住时逐帧弹出记录，因此倒放就是真实轨迹；只有在有碎片运动时才记录。
-  - **单一主循环**：整页只有一个 `requestAnimationFrame` 循环；更换图片、重置只替换数据，不会叠加动画。快速连续导入时只采用最后一次的结果。
-  - **风**：拖动产生的风先排队，在下一个物理步开始时施加到碎片速度上，再写入历史，所以倒放仍是真实轨迹。舞台设置 `touch-action: none`，手机上拖动不会滚动页面。
-  - **反馈**：冲击波圆环 + 短暂画面震动；系统开启“减少动态效果”（`prefers-reduced-motion`）时不震动、圆环更快消失、不画风痕。
-  - **导出**：在不透明的离屏 Canvas 上先铺深色背景再绘制当前画面，用 `toBlob` 下载。
+- `index.html` — page structure; button icons are inline SVG.
+- `css/style.css` — dark theme, responsive layout (≤640px buttons use a two-row grid; touch targets ≥44px).
+- `js/sample.js` — default sample image drawn entirely in Canvas code; no external images or fonts.
+- `js/app.js` — core logic.
+  - **Slicing**: Scales the image to fit the stage, picks a square tile size of `sqrt(area/400)`, and gets about 400 tiles (e.g. 20×20 or 23×17 depending on aspect). Extra edges are cropped centered. Each tile is drawn with `drawImage` from the matching source region.
+  - **Large images**: Imports longer than 1600px on the long side are downscaled to 1600px first.
+  - **Physics**: Fixed 1/60 s steps, gravity, and simple bounce/friction on the floor and side walls. Tiles do not collide with each other.
+  - **Rewind**: Every physics step writes all tiles’ position, angle, and velocity into a preallocated `Float32Array` ring buffer. **Cap: 600 frames (~10 s)** — about 600×400×6×4 bytes ≈ 5.8 MB; older frames are overwritten. Holding Rewind pops frames one by one, so playback is the real path. Recording only happens while tiles are moving.
+  - **Single main loop**: One `requestAnimationFrame` loop for the whole page; swapping images or resetting only replaces data and does not stack animations. Rapid successive imports keep only the latest result.
+  - **Wind**: Drag wind is queued and applied at the start of the next physics step before history is written, so rewind stays accurate. The stage uses `touch-action: none` so mobile drags do not scroll the page.
+  - **Feedback**: Shockwave rings plus a short screen shake; with `prefers-reduced-motion`, shake is off, rings fade faster, and wind streaks are not drawn.
+  - **Export**: Draws the current frame onto an opaque offscreen canvas with a dark background, then downloads via `toBlob`.
 
-## 已知限制
+## Known limits
 
-- 后悔药最多倒放约 10 秒；更早的运动已被覆盖，无法再倒回（此时用“重置”）。
-- 碎片之间没有碰撞，落地后会互相重叠。
-- 调整窗口大小或旋转手机时会重新排版并恢复为完整图片。
-- 导出的是舞台画面（含深色背景），分辨率为屏幕像素 × 设备像素比（最高 2 倍），不是原图分辨率。
-- 非常老的浏览器若不支持 `createImageBitmap` 会回退到 `Image` 解码；未在 Safari 真机上测试，仅在 Chromium（桌面与手机模拟）中测试。
-- `window.__smasher` 是为自动化测试保留的只读调试接口，不影响使用。
+- Rewind goes back at most ~10 seconds; earlier motion is overwritten (use Reset).
+- Tiles do not collide with each other and can overlap after landing.
+- Resizing the window or rotating the phone rebuilds the layout and restores the full image.
+- Export is the stage view (including the dark background) at screen pixels × device pixel ratio (capped at 2×), not the original image resolution.
+- Very old browsers without `createImageBitmap` fall back to `Image` decoding; tested in Chromium (desktop and mobile emulation), not on a real Safari device.
+- `window.__smasher` is a read-only debug hook for automated tests and does not affect normal use.
 
-## 许可
+## License
 
-代码与默认示例图均为本项目原创。
+Code and the default sample image are original to this project.
